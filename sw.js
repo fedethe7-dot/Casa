@@ -1,5 +1,5 @@
 // Cambia la versione a ogni aggiornamento, così il telefono scarica la nuova.
-const CACHE = "hub-v1";
+const CACHE = "hub-v2";
 const FILES = ["./", "index.html", "manifest.json", "icon.svg"];
 
 self.addEventListener("install", e => {
