@@ -97,6 +97,7 @@
   }
   /* ---------- In arrivo (le app che parlano) ---------- */
   a.app{position:relative}
+  a.app.larga{grid-column:1 / -1;min-height:120px;flex-direction:row;align-items:center;justify-content:flex-start;gap:16px}
   .badge{position:absolute;top:14px;right:14px;min-width:26px;height:26px;padding:0 8px;border-radius:13px;
     background:var(--acc);color:#fff;font-size:13.5px;font-weight:700;display:grid;place-items:center}
   .badge.urg{background:#e5484d}
@@ -139,13 +140,23 @@
   <h2>Casa e famiglia</h2>
   <div class="griglia" id="griglia"></div>
 
-  <footer>Ecosistema di Federico · v5</footer>
+  <footer>Ecosistema di Federico · v6</footer>
 </div>
 
 <script src="ecosistema.js"></script>
 <script>
   // Elenco delle app: per aggiungerne una basta una riga nuova qui.
   const APPS = [
+    {
+      nome: "Casa",
+      desc: "Pagamenti e spese di famiglia, chi deve a chi",
+      emoji: "💶",
+      colore: "#6c8cff",
+      url: "https://fedethe7-dot.github.io/gestionecasa/",
+      id: "pagamenti",
+      larga: true,
+      gruppo: "Casa e famiglia"
+    },
     {
       nome: "Gestione Casa",
       desc: "Acquisti, fatture, garanzie e manuali",
@@ -181,6 +192,7 @@
     el.className = "app";
     el.href = a.url;
     if (a.id) el.dataset.app = a.id;
+    if (a.larga) el.classList.add("larga");
     el.innerHTML = `
       <div class="ico" style="background:${a.colore}33">${a.emoji}</div>
       <div><div class="nome">${a.nome}</div><div class="desc">${a.desc}</div></div>`;
