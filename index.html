@@ -95,6 +95,27 @@
     #intro{display:none}
     .pronta a.app,.pronta .presto{animation:none;opacity:1}
   }
+  /* ---------- In arrivo (le app che parlano) ---------- */
+  a.app{position:relative}
+  .badge{position:absolute;top:14px;right:14px;min-width:26px;height:26px;padding:0 8px;border-radius:13px;
+    background:var(--acc);color:#fff;font-size:13.5px;font-weight:700;display:grid;place-items:center}
+  .badge.urg{background:#e5484d}
+  #inarrivo{display:flex;flex-direction:column;gap:8px}
+  #inarrivo.carica::before{content:"Controllo le app…";color:var(--sub);font-size:14px;padding:14px 4px}
+  .ev-gruppo{font-size:12.5px;color:var(--sub);font-weight:600;margin:8px 4px 0}
+  .ev{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;border-left:4px solid var(--c)}
+  .ev.lavori{--c:#e0962f}.ev.animali{--c:#9b72ff}.ev.casa{--c:#34a373}
+  .ev-main{display:flex;align-items:center;gap:12px;padding:13px 14px;text-decoration:none;color:inherit}
+  .ev-ico{font-size:24px;width:32px;text-align:center;flex:none}
+  .ev-tx{flex:1;min-width:0;display:flex;flex-direction:column}
+  .ev-t1{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ev-t2{font-size:13px;color:var(--sub);margin-top:2px}
+  .ev-avv{color:#e0962f;font-weight:600}
+  .ev-quando{font-size:12.5px;font-weight:600;color:var(--sub);white-space:nowrap;flex:none}
+  .ev-quando.q-presto{color:#e0962f}.ev-quando.q-urg{color:#e5484d}
+  .ev-prog{display:block;border-top:1px solid var(--line);padding:10px 14px;font-size:14px;font-weight:600;color:var(--acc);text-decoration:none}
+  .ev-vuoto,.ev-nota{color:var(--sub);font-size:14px;padding:12px 4px;line-height:1.4}
+  .ev-nota{background:var(--card2);border-radius:14px;padding:12px 14px}
 </style>
 </head>
 <body>
@@ -112,12 +133,16 @@
     <div class="data" id="data"></div>
   </header>
 
+  <h2>In arrivo</h2>
+  <div id="inarrivo" class="carica"></div>
+
   <h2>Casa e famiglia</h2>
   <div class="griglia" id="griglia"></div>
 
-  <footer>Ecosistema di Federico · v4</footer>
+  <footer>Ecosistema di Federico · v5</footer>
 </div>
 
+<script src="ecosistema.js"></script>
 <script>
   // Elenco delle app: per aggiungerne una basta una riga nuova qui.
   const APPS = [
@@ -127,6 +152,7 @@
       emoji: "🏠",
       colore: "#34a373",
       url: "https://fedethe7-dot.github.io/HomeVault/",
+      id: "casa",
       gruppo: "Casa e famiglia"
     },
     {
@@ -135,6 +161,7 @@
       emoji: "🧹",
       colore: "#e0962f",
       url: "https://fedethe7-dot.github.io/Lavori/",
+      id: "lavori",
       gruppo: "Casa e famiglia"
     },
     {
@@ -143,6 +170,7 @@
       emoji: "🐶",
       colore: "#9b72ff",
       url: "https://fedethe7-dot.github.io/Animali/",
+      id: "animali",
       gruppo: "Casa e famiglia"
     }
   ];
@@ -152,6 +180,7 @@
     const el = document.createElement("a");
     el.className = "app";
     el.href = a.url;
+    if (a.id) el.dataset.app = a.id;
     el.innerHTML = `
       <div class="ico" style="background:${a.colore}33">${a.emoji}</div>
       <div><div class="nome">${a.nome}</div><div class="desc">${a.desc}</div></div>`;
@@ -172,7 +201,7 @@
   // Si vede all'apertura dell'app; tocca lo schermo per saltarla.
   // Se torni all'hub entro 10 minuti (es. dopo aver aperto un'app) non si ripete.
   document.getElementById("saluto-intro").textContent =
-    (ora < 13 ? "Buongiorno" : ora < 18 ? "Buon pomeriggio" : "Buonasera") + ", Federico";
+    (ora < 13 ? "Buongiorno" : ora < 18 ? "Buon pomeriggio" : "Buonasera") + ", " + (Ecosistema.chiSei() || "Federico");
   const intro = document.getElementById("intro");
   let recente = false;
   try { recente = Date.now() - Number(sessionStorage.getItem("introVista") || 0) < 600000; } catch(e){}
@@ -190,6 +219,10 @@
     intro.addEventListener("click", chiudiIntro);
     setTimeout(chiudiIntro, 2300);
   }
+
+  // Le app si parlano: riepilogo di quello che sta per succedere
+  Ecosistema.aggiorna();
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") Ecosistema.aggiorna(); });
 
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 </script>
