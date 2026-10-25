@@ -23,10 +23,15 @@
     min-height:100vh; padding:calc(20px + env(safe-area-inset-top)) 16px 40px;
   }
   .wrap{max-width:560px;margin:0 auto}
-  header{margin:8px 4px 24px}
-  .saluto{color:var(--sub);font-size:15px}
-  h1{font-size:30px;font-weight:700;letter-spacing:-.5px;margin-top:4px}
-  .data{color:var(--sub);font-size:14px;margin-top:6px;text-transform:capitalize}
+  header{
+    margin:0 0 8px;border-radius:26px;overflow:hidden;position:relative;
+    min-height:190px;padding:22px 20px;display:flex;flex-direction:column;justify-content:flex-end;
+    background:linear-gradient(180deg,#0b0d1200 30%,#0b0d12d9 100%),url("sfondo.jpg") center 40%/cover;
+    color:#fff;
+  }
+  .saluto{color:#ffffffcc;font-size:15px}
+  h1{font-size:30px;font-weight:700;letter-spacing:-.5px;margin-top:4px;text-shadow:0 2px 12px #0006}
+  .data{color:#ffffffb3;font-size:14px;margin-top:6px;text-transform:capitalize}
   h2{font-size:13px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin:22px 4px 10px}
   .griglia{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   a.app{
@@ -51,7 +56,8 @@
 
   /* ---------- Sequenza d'ingresso ---------- */
   #intro{
-    position:fixed;inset:0;z-index:50;background:#0b0d12;
+    position:fixed;inset:0;z-index:50;
+    background:linear-gradient(180deg,#0b0d1240,#0b0d12bf),url("sfondo.jpg") center/cover #0b0d12;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;
     transition:opacity .5s ease, transform .6s cubic-bezier(.6,0,.2,1);
   }
@@ -109,7 +115,7 @@
   <h2>Casa e famiglia</h2>
   <div class="griglia" id="griglia"></div>
 
-  <footer>Ecosistema di Federico · v3</footer>
+  <footer>Ecosistema di Federico · v4</footer>
 </div>
 
 <script>

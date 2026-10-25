@@ -1,6 +1,6 @@
 // Cambia la versione a ogni aggiornamento, così il telefono scarica la nuova.
-const CACHE = "hub-v3";
-const FILES = ["./", "index.html", "manifest.json", "icon.svg", "icon-192.png", "icon-512.png"];
+const CACHE = "hub-v4";
+const FILES = ["./", "index.html", "manifest.json", "icon.svg", "icon-192.png", "icon-512.png", "sfondo.jpg"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
