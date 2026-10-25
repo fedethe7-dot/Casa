@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d12">
+<title>Le mie app</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  :root{
+    --bg:#0b0d12; --card:#151922; --card2:#1c2130; --txt:#f2f4f8; --sub:#9aa3b5;
+    --line:#252b3a; --acc:#6c8cff;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f4f6fb; --card:#ffffff; --card2:#eef1f8; --txt:#141821; --sub:#5d6678; --line:#e1e5ee; --acc:#3f63f0; }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    min-height:100vh; padding:calc(20px + env(safe-area-inset-top)) 16px 40px;
+  }
+  .wrap{max-width:560px;margin:0 auto}
+  header{margin:8px 4px 24px}
+  .saluto{color:var(--sub);font-size:15px}
+  h1{font-size:30px;font-weight:700;letter-spacing:-.5px;margin-top:4px}
+  .data{color:var(--sub);font-size:14px;margin-top:6px;text-transform:capitalize}
+  h2{font-size:13px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin:22px 4px 10px}
+  .griglia{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  a.app{
+    display:flex;flex-direction:column;justify-content:space-between;gap:18px;
+    background:var(--card);border:1px solid var(--line);border-radius:22px;
+    padding:18px;min-height:150px;text-decoration:none;color:inherit;
+    transition:transform .12s ease, background .12s ease;
+  }
+  a.app:active{transform:scale(.97);background:var(--card2)}
+  .ico{
+    width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:28px;
+  }
+  .nome{font-size:18px;font-weight:650}
+  .desc{font-size:13.5px;color:var(--sub);margin-top:4px;line-height:1.35}
+  .presto{
+    border:1.5px dashed var(--line);border-radius:22px;padding:18px;min-height:150px;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    color:var(--sub);font-size:14px;text-align:center;gap:6px
+  }
+  .presto span{font-size:24px}
+  footer{color:var(--sub);font-size:12px;text-align:center;margin-top:36px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="saluto" id="saluto">Ciao</div>
+    <h1>Le mie app</h1>
+    <div class="data" id="data"></div>
+  </header>
+
+  <h2>Casa e famiglia</h2>
+  <div class="griglia" id="griglia"></div>
+
+  <footer>Ecosistema di Federico · v1</footer>
+</div>
+
+<script>
+  // Elenco delle app: per aggiungerne una basta una riga nuova qui.
+  const APPS = [
+    {
+      nome: "Gestione Casa",
+      desc: "Acquisti, fatture, garanzie e manuali",
+      emoji: "🏠",
+      colore: "#2f7d5b",
+      url: "https://fedethe7-dot.github.io/HomeVault/",
+      gruppo: "Casa e famiglia"
+    },
+    {
+      nome: "Lavori di casa",
+      desc: "Lavori da fare, giorni liberi e fatti",
+      emoji: "🧹",
+      colore: "#c27a1f",
+      url: "https://fedethe7-dot.github.io/Lavori/",
+      gruppo: "Casa e famiglia"
+    }
+  ];
+
+  const g = document.getElementById("griglia");
+  APPS.forEach(a => {
+    const el = document.createElement("a");
+    el.className = "app";
+    el.href = a.url;
+    el.innerHTML = `
+      <div class="ico" style="background:${a.colore}33">${a.emoji}</div>
+      <div><div class="nome">${a.nome}</div><div class="desc">${a.desc}</div></div>`;
+    g.appendChild(el);
+  });
+  const p = document.createElement("div");
+  p.className = "presto";
+  p.innerHTML = "<span>➕</span>Altre app in arrivo";
+  g.appendChild(p);
+
+  const ora = new Date().getHours();
+  document.getElementById("saluto").textContent =
+    ora < 13 ? "Buongiorno ☀️" : ora < 18 ? "Buon pomeriggio 👋" : "Buonasera 🌙";
+  document.getElementById("data").textContent =
+    new Date().toLocaleDateString("it-IT", {weekday:"long", day:"numeric", month:"long"});
+
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+</script>
+</body>
+</html>
