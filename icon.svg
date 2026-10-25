@@ -1,7 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0b0d12"/>
-  <rect x="104" y="104" width="134" height="134" rx="36" fill="#2f7d5b"/>
-  <rect x="274" y="104" width="134" height="134" rx="36" fill="#c27a1f"/>
-  <rect x="104" y="274" width="134" height="134" rx="36" fill="#6c8cff"/>
-  <rect x="274" y="274" width="134" height="134" rx="36" fill="none" stroke="#9aa3b5" stroke-width="14" stroke-dasharray="26 18"/>
+  <defs>
+    <linearGradient id="sfondo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#26315c"/>
+      <stop offset="1" stop-color="#0b0d12"/>
+    </linearGradient>
+    <linearGradient id="tetto" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8fa6ff"/>
+      <stop offset="1" stop-color="#6c8cff"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#sfondo)"/>
+  <!-- tetto -->
+  <path d="M118 238 L256 122 L394 238" fill="none" stroke="url(#tetto)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- quattro finestrelle = le app -->
+  <rect x="166" y="232" width="80" height="80" rx="22" fill="#34a373"/>
+  <rect x="266" y="232" width="80" height="80" rx="22" fill="#e0962f"/>
+  <rect x="166" y="332" width="80" height="80" rx="22" fill="#9b72ff"/>
+  <rect x="266" y="332" width="80" height="80" rx="22" fill="#f2f4f8" opacity=".92"/>
 </svg>
