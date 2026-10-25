@@ -14,8 +14,9 @@
     --line:#252b3a; --acc:#6c8cff;
   }
   @media (prefers-color-scheme: light){
-    :root{ --bg:#f4f6fb; --card:#ffffff; --card2:#eef1f8; --txt:#141821; --sub:#5d6678; --line:#e1e5ee; --acc:#3f63f0; }
+    :root:not([data-theme=dark]){ --bg:#f4f6fb; --card:#ffffff; --card2:#eef1f8; --txt:#141821; --sub:#5d6678; --line:#e1e5ee; --acc:#3f63f0; }
   }
+  :root[data-theme=light]{ --bg:#f4f6fb; --card:#ffffff; --card2:#eef1f8; --txt:#141821; --sub:#5d6678; --line:#e1e5ee; --acc:#3f63f0; }
   *{box-sizing:border-box;margin:0;padding:0}
   body{
     background:var(--bg); color:var(--txt);
@@ -105,7 +106,7 @@
   #inarrivo.carica::before{content:"Controllo le app…";color:var(--sub);font-size:14px;padding:14px 4px}
   .ev-gruppo{font-size:12.5px;color:var(--sub);font-weight:600;margin:8px 4px 0}
   .ev{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;border-left:4px solid var(--c)}
-  .ev.lavori{--c:#e0962f}.ev.animali{--c:#9b72ff}.ev.casa{--c:#34a373}
+  .ev.hub{--c:#8fa6ff}.ev.lavori{--c:#e0962f}.ev.animali{--c:#9b72ff}.ev.casa{--c:#34a373}
   .ev-main{display:flex;align-items:center;gap:12px;padding:13px 14px;text-decoration:none;color:inherit}
   .ev-ico{font-size:24px;width:32px;text-align:center;flex:none}
   .ev-tx{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -129,6 +130,10 @@
 </div>
 <div class="wrap">
   <header>
+    <div class="topbar">
+      <button class="tbtn" id="btnBlocca" aria-label="Blocca" title="Blocca">🔒</button>
+      <button class="tbtn" id="btnImp" aria-label="Impostazioni" title="Impostazioni">⚙️</button>
+    </div>
     <div class="saluto" id="saluto">Ciao</div>
     <h1>Le mie app</h1>
     <div class="data" id="data"></div>
@@ -140,10 +145,14 @@
   <h2>Casa e famiglia</h2>
   <div class="griglia" id="griglia"></div>
 
-  <footer>Ecosistema di Federico · v6</footer>
+  <footer>Ecosistema di Federico · v7</footer>
 </div>
 
+<div id="seq" class="nascosto"></div>
+<div id="imp" class="sheet-bg nascosto"></div>
+<script src="blocco.js"></script>
 <script src="ecosistema.js"></script>
+<script src="sistema.js"></script>
 <script>
   // Elenco delle app: per aggiungerne una basta una riga nuova qui.
   const APPS = [
@@ -217,8 +226,10 @@
   const intro = document.getElementById("intro");
   let recente = false;
   try { recente = Date.now() - Number(sessionStorage.getItem("introVista") || 0) < 600000; } catch(e){}
+  let introFinita; const dopoIntro = new Promise(r => introFinita = r);
   function chiudiIntro(){
     if (intro.classList.contains("via")) return;
+    setTimeout(introFinita, 450);
     intro.classList.add("via");
     document.querySelectorAll("a.app, .presto").forEach((el, i) => el.style.animationDelay = (i * 90) + "ms");
     document.body.classList.add("pronta");
@@ -226,15 +237,32 @@
     try { sessionStorage.setItem("introVista", Date.now()); } catch(e){}
   }
   if (recente || matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    intro.remove();
+    intro.remove(); introFinita();
   } else {
     intro.addEventListener("click", chiudiIntro);
     setTimeout(chiudiIntro, 2300);
   }
 
-  // Le app si parlano: riepilogo di quello che sta per succedere
-  Ecosistema.aggiorna();
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") Ecosistema.aggiorna(); });
+  // Prima lo sblocco, poi le app si parlano (riepilogo In arrivo)
+  Sistema.avvio(dopoIntro).then(ok => { if (ok) Ecosistema.aggiorna(); });
+  document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState !== "visible") return;
+    if (EcoBlocco.attivo() && !EcoBlocco.sbloccato() && !document.querySelector("#seq:not(.nascosto)")) {
+      if (await Sistema.schermataSequenza("sblocca") === "reset") await Sistema.schermataSequenza("crea", "Scegline una nuova");
+    }
+    EcoBlocco.rinnova(); Ecosistema.aggiorna();
+  });
+  document.getElementById("btnImp").onclick = () => Sistema.apriImpostazioni();
+  // il promemoria "Fai il backup" apre le impostazioni
+  document.getElementById("inarrivo").addEventListener("click", e => {
+    const a = e.target.closest('a[href="#backup"]'); if (!a) return;
+    e.preventDefault(); Sistema.apriImpostazioni("💾 Tocca \"Scarica il backup di tutte le app\" in fondo.");
+  });
+  document.getElementById("btnBlocca").onclick = async () => {
+    if (!EcoBlocco.attivo()) return Sistema.apriImpostazioni("Per bloccare, prima crea la sequenza qui sotto 🔒");
+    EcoBlocco.blocca();
+    if (await Sistema.schermataSequenza("sblocca") === "reset") await Sistema.schermataSequenza("crea", "Scegline una nuova");
+  };
 
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 </script>

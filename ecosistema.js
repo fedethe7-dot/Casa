@@ -46,7 +46,7 @@ function linkNuovoLavoro({ emoji, titolo, data, dettagli }) {
 
 /* ---------- chi sei ---------- */
 function chiSei() {
-  return leggi('lavori2.me') || (leggi('animali_cfg') || {}).chi || leggi('hv_utente', false) || '';
+  return leggi('eco.me', false) || leggi('lavori2.me') || (leggi('animali_cfg') || {}).chi || leggi('hv_utente', false) || '';
 }
 
 /* ---------- Lavori di casa ---------- */
@@ -134,12 +134,15 @@ function eventiCasa(d) {
   return out;
 }
 async function caricaCasa() {
-  const token = leggi('hv_token', false);
+  let token = leggi('hv_token', false);
+  if (!token && window.Sistema && await Sistema.rientraCasa()) token = leggi('hv_token', false);
   if (!token) return { collegata: false, eventi: [] };
+  const chiedi = t => conTimeout(fetch(URL_CASA, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ azione: 'dati', token: t }) })).then(r => r.json());
   try {
-    const r = await conTimeout(fetch(URL_CASA, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ azione: 'dati', token }) }));
-    const j = await r.json();
-    if (!j.ok) return { collegata: false, eventi: [] };   // accesso scaduto: va riaperta l'app
+    let j = await chiedi(token);
+    // accesso scaduto: con la chiave di sistema l'hub rientra da solo
+    if (!j.ok && j.codice === 'SESSIONE' && window.Sistema && await Sistema.rientraCasa()) j = await chiedi(leggi('hv_token', false));
+    if (!j.ok) return { collegata: false, eventi: [] };
     return { collegata: true, eventi: eventiCasa(j) };     // i dati restano solo in memoria, come nell'app
   } catch (e) {
     return { collegata: true, eventi: [], errore: true };
@@ -156,7 +159,7 @@ function rigaEvento(x) {
       <span class="ev-ico">${esc(x.emoji)}</span>
       <span class="ev-tx"><span class="ev-t1">${esc(x.testo)}</span>
         <span class="ev-t2">${esc(x.sotto)}${x.avviso ? ` · <b class="ev-avv">${esc(x.avviso)}</b>` : ''}</span></span>
-      <span class="ev-quando ${urgente}">${esc(quandoTesto(x.giorni))}</span>
+      <span class="ev-quando ${urgente}">${esc(x.quando || quandoTesto(x.giorni))}</span>
     </a>
     ${x.programma ? `<a class="ev-prog" href="${esc(x.programma)}" title="Crea un lavoro">📅 Programma</a>` : ''}
   </div>`;
@@ -164,7 +167,15 @@ function rigaEvento(x) {
 
 function disegna(ris) {
   const box = document.getElementById('inarrivo');
-  const tutti = [].concat(...ris.map(r => r.eventi)).sort((a, b) => a.giorni - b.giorni);
+  const tutti = [].concat(...ris.map(r => r.eventi));
+  // promemoria backup: se non si fa da più di 30 giorni
+  if (ris.some(r => r.collegata)) {
+    const ub = leggi('eco.ultimoBackup', false);
+    const da = ub ? -gg(ub) : null;
+    if (da === null || da > 30) tutti.push({ app: 'hub', emoji: '💾', testo: 'Fai il backup delle app', giorni: 0,
+      sotto: da === null ? 'mai fatto da questo telefono' : `l'ultimo è di ${da} giorni fa`, link: '#backup', quando: 'oggi' });
+  }
+  tutti.sort((a, b) => a.giorni - b.giorni);
   const scollegate = ris.filter(r => !r.collegata).map(r => r.nome);
 
   // contatori sulle finestrelle
