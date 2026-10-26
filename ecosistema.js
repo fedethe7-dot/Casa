@@ -116,7 +116,7 @@ async function caricaAnimali() {
   return { collegata: true, eventi: d ? eventiAnimali(d) : [] };
 }
 
-/* ---------- Gestione Casa (garanzie) ---------- */
+/* ---------- Home Vault (garanzie) ---------- */
 function eventiCasa(d) {
   const out = [];
   (d.prodotti || []).forEach(p => {
@@ -150,7 +150,7 @@ async function caricaCasa() {
 }
 
 /* ---------- disegno ---------- */
-const NOMI_APP = { lavori: 'Lavori di casa', animali: 'Animali di casa', casa: 'Gestione Casa' };
+const NOMI_APP = { lavori: 'Lavori di casa', animali: 'Animali di casa', casa: 'Home Vault' };
 
 function rigaEvento(x) {
   const urgente = x.giorni <= 0 ? 'q-urg' : x.giorni <= 3 ? 'q-presto' : '';

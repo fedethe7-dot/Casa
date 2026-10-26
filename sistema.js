@@ -15,7 +15,8 @@
 (function () {
   const BASE = 'https://fedethe7-dot.github.io';
   const URL_ANIMALI = 'https://script.google.com/macros/s/AKfycbwNiO6zEPwRaKBYlKThhAcG_T4x9eyxcTgsYctVRcWJfaDktp7Jl9gS00yraGfQFZVN/exec';
-  const URL_CASA = 'https://script.google.com/macros/s/AKfycbxdj3IFzUgoMA3PLSxcetu9Q_yqGX2kvQlXXsqEg4Z_WU0d80_XHhrQnap_DK02Ehxo/exec';
+  const URL_CASA = 'https://script.google.com/macros/s/AKfycbxdj3IFzUgoMA3PLSxcetu9Q_yqGX2kvQlXXsqEg4Z_WU0d80_XHhrQnap_DK02Ehxo/exec';   // Home Vault
+  const URL_PAGAMENTI = 'https://script.google.com/macros/s/AKfycbx_UKlBm4SKEYtPWrUO9bh1MuMBBKSzJbpgFQj1j9pbW5oFF3bkJL5DevaKj1rF537-wA/exec';   // Gestione Casa
   const NOMI_BASE = ['Federico', 'Mamma', 'Sorella'];
 
   /* ---------- memoria ---------- */
@@ -186,7 +187,7 @@
   function salvaTema(t) {
     put('eco.tema', t);
     put('lavori2.tema', JSON.stringify(t));   // Lavori: 'auto' | 'light' | 'dark'
-    put('hv_tema', t);                         // Gestione Casa: stessi valori
+    put('hv_tema', t);                         // Home Vault: stessi valori
     applicaTema();
   }
 
@@ -227,13 +228,26 @@
   async function provaCasa(k) {
     const r = await conTimeout(fetch(URL_CASA, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ azione: 'login', pin: k, utente: raw('eco.me') || 'Federico' }) }));
     const j = await r.json();
-    if (!j.ok) return { ok: false, t: j.errore || 'il foglio di Gestione Casa ha un PIN diverso' };
+    if (!j.ok) return { ok: false, t: j.errore || 'Home Vault ha un PIN diverso' };
     put('hv_token', j.token); put('hv_utente', j.utente || raw('eco.me') || '');
+    return { ok: true };
+  }
+  // Gestione Casa (pagamenti): entra con la chiave e lascia la sessione pronta per l'app
+  async function provaPagamenti(k) {
+    const n = raw('eco.me') || '';
+    const r = await conTimeout(fetch(URL_PAGAMENTI, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'loginChiave', chiave: k, chi: n }) }));
+    const j = await r.json();
+    if (!j.ok) {
+      const t = { CHIAVE_ERRATA: 'la chiave non coincide', CHIAVE_NON_IMPOSTATA: 'manca impostaChiave nello script', AZIONE_SCONOSCIUTA: 'manca il file Chiave.gs o la nuova versione',
+        NON_AUTORIZZATO: 'scegli chi sei qui sopra', TROPPI_TENTATIVI: 'troppi tentativi, riprova tra 15 minuti' }[j.error] || j.error;
+      return { ok: false, t };
+    }
+    put('gestioneCasa.sessione', JSON.stringify({ session: j.session, email: j.email, me: j.me, admin: j.admin, sheetUrl: j.sheetUrl, via: 'chiave' }));
     return { ok: true };
   }
   async function collegaTutte(k) {
     put('eco.chiave', k);
-    const prove = [['🧹 Lavori di casa', provaLavori], ['🐶 Animali di casa', provaAnimali], ['🏠 Gestione Casa', provaCasa]];
+    const prove = [['💶 Gestione Casa', provaPagamenti], ['🗄️ Home Vault', provaCasa], ['🧹 Lavori di casa', provaLavori], ['🐶 Animali di casa', provaAnimali]];
     const out = [];
     for (const [nome, f] of prove) {
       try { out.push([nome, await f(k)]); }
@@ -241,7 +255,7 @@
     }
     return out;
   }
-  // Se l'accesso di Gestione Casa scade, l'hub rientra da solo con la chiave
+  // Se l'accesso di Home Vault scade, l'hub rientra da solo con la chiave
   async function rientraCasa() {
     const k = raw('eco.chiave');
     if (!k) return false;
@@ -286,7 +300,7 @@
         const j = await r.json(); if (!j.ok) throw new Error(j.errore); pac.app.animali = { animali: j.animali, registro: j.registro };
       } else errori.push('Animali non collegato');
     } catch (e) { errori.push('Animali: ' + e.message); }
-    // Gestione Casa
+    // Home Vault
     try {
       let token = raw('hv_token');
       if (!token && k && await rientraCasa()) token = raw('hv_token');
@@ -297,12 +311,23 @@
           r = await conTimeout(fetch(URL_CASA, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ azione: 'dati', token: raw('hv_token') }) }));
           j = await r.json();
         }
-        if (!j.ok) throw new Error(j.errore); delete j.token; pac.app.gestioneCasa = j;
-      } else errori.push('Gestione Casa non collegata');
-    } catch (e) { errori.push('Gestione Casa: ' + e.message); }
-    // Casa (pagamenti): copia salvata sul telefono
-    const pag = json('gestioneCasa.v1');
-    if (pag) pac.app.pagamenti = pag; else errori.push('Casa (pagamenti): nessuna copia su questo telefono');
+        if (!j.ok) throw new Error(j.errore); delete j.token; pac.app.homeVault = j;
+      } else errori.push('Home Vault non collegato');
+    } catch (e) { errori.push('Home Vault: ' + e.message); }
+    // Gestione Casa (pagamenti): dal foglio se collegata, altrimenti la copia sul telefono
+    try {
+      let sess = json('gestioneCasa.sessione');
+      if (!sess && k) { await provaPagamenti(k); sess = json('gestioneCasa.sessione'); }
+      if (sess && sess.session) {
+        const r = await conTimeout(fetch(URL_PAGAMENTI, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'load', session: sess.session }) }));
+        const j = await r.json(); if (!j.ok) throw new Error(j.error);
+        pac.app.gestioneCasa = j.state;
+      } else throw new Error('non collegata');
+    } catch (e) {
+      const pag = json('gestioneCasa.v1');
+      if (pag) { pac.app.gestioneCasa = pag; errori.push('Gestione Casa: salvata la copia del telefono (' + e.message + ')'); }
+      else errori.push('Gestione Casa: ' + e.message);
+    }
 
     if (!Object.keys(pac.app).length) throw new Error('Nessuna app collegata: inserisci prima la chiave di sistema');
     pac.note = errori;
@@ -337,8 +362,8 @@
         ${json('lavori2.url') ? '' : `<input id="impLU" class="url" type="url" placeholder="Link dello script di Lavori (…/exec)">`}
         <button class="bt" id="impCollega">Collega tutte le app</button>
         <div class="stato" id="impStato"></div>
-        <p class="nota">Una sola chiave per Lavori, Animali e Gestione Casa. Deve essere la stessa scritta nei loro fogli Google.
-        L'app Casa dei pagamenti resta con l'accesso Google.</p>
+        <p class="nota">Una sola chiave per Gestione Casa, Home Vault, Lavori e Animali. Deve essere la stessa impostata nei loro script Google.
+        In Gestione Casa resta possibile anche l'accesso con Google.</p>
       </div>
 
       <h4>🔒 Sblocco a sequenza</h4>
@@ -390,7 +415,7 @@
       const b = $('#impCollega'); b.disabled = true; b.textContent = 'Collego…'; st.innerHTML = '';
       const ris = await collegaTutte(k);
       st.innerHTML = ris.map(([n, r]) => `<span>${r.ok ? '✅' : '⚠️'} ${esc(n)}${r.ok ? '' : ': ' + esc(r.t)}</span>`).join('')
-        + '<span>🔐 💶 Casa (pagamenti): accesso Google, come prima</span>';
+        ;
       b.disabled = false; b.textContent = 'Collega tutte le app';
       if (window.Ecosistema) Ecosistema.aggiorna();
     };
