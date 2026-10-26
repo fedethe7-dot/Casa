@@ -12,7 +12,11 @@
 
   var B = window.EcoBlocco = {
     attivo: function () { return !!get(K_SEQ); },
-    sbloccato: function () { return !B.attivo() || Number(get(K_FINO) || 0) > Date.now(); },
+    sbloccato: function () {
+      // Nell'app Android "Le mie app" lo sblocco lo fa l'impronta
+      try { if (window.AndroidApp && AndroidApp.sbloccato()) return true; } catch (e) { /* niente */ }
+      return !B.attivo() || Number(get(K_FINO) || 0) > Date.now();
+    },
     rinnova: function () { if (B.sbloccato()) set(K_FINO, String(Date.now() + DURATA)); },
     blocca: function () { set(K_FINO, '0'); },
     sblocca: function () { set(K_FINO, String(Date.now() + DURATA)); }

@@ -268,10 +268,10 @@
     const b = btoa(unescape(encodeURIComponent(JSON.stringify(o))));
     return BASE + '/Casa/#invito=' + encodeURIComponent(b);
   }
-  function leggiInvito() {
-    const m = location.hash.match(/invito=([^&]+)/);
+  function leggiInvito(testo) {
+    const m = (testo || location.hash).match(/invito=([^&\s]+)/);
     if (!m) return null;
-    history.replaceState(null, '', location.pathname);
+    if (!testo) history.replaceState(null, '', location.pathname);
     try {
       const o = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
       if (o.lu && /^https:\/\/script\.google\.com\//.test(o.lu)) put('lavori2.url', JSON.stringify(o.lu));
@@ -380,6 +380,8 @@
       <div class="box">
         <button class="bt sec" id="impInvito">📲 Manda il link d'invito</button>
         <p class="nota">Contiene la chiave di sistema: mandalo solo nella chat di famiglia. Aprendolo, il telefono di mamma o di Beatrice si collega a tutte le app.</p>
+        <input id="impIncolla" class="url" type="url" placeholder="Hai ricevuto un link d'invito? Incollalo qui" style="margin-top:12px">
+        <button class="bt sec" id="impUsaInvito">Usa il link d'invito</button>
       </div>
 
       <h4>💾 Backup</h4>
@@ -431,6 +433,12 @@
       chiudi(); EcoBlocco.blocca();
       await schermataSequenza('sblocca', 'Disegnala per toglierla');
       del('eco.sequenza'); EcoBlocco.sblocca(); toast('Sequenza tolta');
+    };
+    $('#impUsaInvito').onclick = () => {
+      const o = leggiInvito($('#impIncolla').value.trim());
+      if (!o || !o.k) return toast('Link d\'invito non valido');
+      put('eco.chiave', o.k);
+      apriImpostazioni('🔗 Invito letto. Ora scegli chi sei e premi "Collega tutte le app".');
     };
     $('#impInvito').onclick = async () => {
       if (!raw('eco.chiave')) return toast('Prima collega le app con la chiave');
