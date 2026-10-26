@@ -15,7 +15,7 @@ L'hub non salva dati: li legge ogni volta dalle app. Se un'app non è mai stata 
 
 ## Sicurezza e impostazioni uniche (v7)
 
-- **Chiave di sistema** (8 cifre, senza 0 iniziale): la stessa nei fogli di Lavori, Animali e Gestione Casa.
+- **Chiave di sistema** (da 8 a 40 caratteri: lettere, numeri e simboli; niente spazi, accenti, apostrofi o virgolette): la stessa nei fogli di Lavori, Animali e Gestione Casa.
   La si scrive una volta nelle impostazioni dell'hub e collega tutte le app. Sono gli script Google a controllarla.
 - **Sblocco a sequenza**: protegge il telefono. Le app includono `/Casa/blocco.js` e, se il telefono è bloccato,
   rimandano all'hub e poi tornano dov'erano. Lo sblocco dura 30 minuti e si rinnova usando le app.

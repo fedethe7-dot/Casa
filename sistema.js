@@ -3,7 +3,7 @@
    impostazioni uniche (chi sei, tema), invito famiglia, backup.
 
    SICUREZZA, in breve
-   - La CHIAVE DI SISTEMA (8 cifre) è la stessa in tutti i fogli:
+   - La CHIAVE DI SISTEMA (8-40 tra lettere, numeri e simboli) è la stessa in tutti i fogli:
      sono gli script Google a controllarla, quindi da internet
      senza chiave non si legge niente.
    - La SEQUENZA protegge il telefono: senza sequenza non si apre
@@ -53,7 +53,7 @@
   .chips{display:flex;flex-wrap:wrap;gap:8px}
   .chip{border:1.5px solid var(--line);background:var(--card);color:var(--txt);border-radius:20px;padding:9px 14px;font-size:15px}
   .chip.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 20%,transparent)}
-  .sheet input{width:100%;font-size:20px;letter-spacing:4px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--card2);color:var(--txt);margin-top:4px}
+  .sheet input{width:100%;font-size:18px;letter-spacing:2px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--card2);color:var(--txt);margin-top:4px}
   .sheet input.url{font-size:14px;letter-spacing:0}
   .bt{display:block;width:100%;border:0;border-radius:14px;padding:14px;font-size:16px;font-weight:650;margin-top:10px;background:var(--acc);color:#fff}
   .bt.sec{background:var(--card2);color:var(--txt)}
@@ -158,7 +158,7 @@
       L.onclick = async () => {
         const chiave = raw('eco.chiave');
         if (chiave) {
-          const k = prompt('Per togliere la sequenza scrivi la chiave di sistema (8 cifre):');
+          const k = prompt('Per togliere la sequenza scrivi la chiave di sistema:');
           if (k == null) return;
           if (k.trim() !== chiave) return msg('Chiave sbagliata', true);
         } else if (!confirm('Vuoi togliere la sequenza da questo telefono?')) return;
@@ -225,7 +225,6 @@
     return { ok: true };
   }
   async function provaCasa(k) {
-    if (!/^\d{6,8}$/.test(k)) return { ok: false, t: 'Gestione Casa vuole un PIN di 6-8 cifre' };
     const r = await conTimeout(fetch(URL_CASA, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ azione: 'login', pin: k, utente: raw('eco.me') || 'Federico' }) }));
     const j = await r.json();
     if (!j.ok) return { ok: false, t: j.errore || 'il foglio di Gestione Casa ha un PIN diverso' };
@@ -334,7 +333,7 @@
 
       <h4>🔑 Chiave di sistema</h4>
       <div class="box">
-        <input id="impK" type="password" inputmode="numeric" maxlength="8" placeholder="8 cifre" value="${esc(raw('eco.chiave') || '')}" autocomplete="off">
+        <input id="impK" type="password" maxlength="40" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Da 8 a 40: lettere, numeri, simboli" value="${esc(raw('eco.chiave') || '')}" autocomplete="off">
         ${json('lavori2.url') ? '' : `<input id="impLU" class="url" type="url" placeholder="Link dello script di Lavori (…/exec)">`}
         <button class="bt" id="impCollega">Collega tutte le app</button>
         <div class="stato" id="impStato"></div>
@@ -384,7 +383,7 @@
     $('#impCollega').onclick = async () => {
       const k = $('#impK').value.trim();
       const st = $('#impStato');
-      if (!/^[1-9]\d{7}$/.test(k)) { st.innerHTML = '<span>⚠️ La chiave deve avere 8 cifre e non iniziare con 0</span>'; return; }
+      if (!/^(?!.*['\"`\\])[\x21-\x7E]{8,40}$/.test(k)) { st.innerHTML = '<span>⚠️ Da 8 a 40 caratteri: lettere, numeri e simboli come ! ? # @. Niente spazi, accenti, apostrofi o virgolette</span>'; return; }
       if (!raw('eco.me')) { st.innerHTML = '<span>⚠️ Prima scegli chi sei, qui sopra</span>'; return; }
       const lu = $('#impLU') && $('#impLU').value.trim();
       if (lu) { if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(lu)) { st.innerHTML = '<span>⚠️ Il link di Lavori deve finire con /exec</span>'; return; } put('lavori2.url', JSON.stringify(lu)); }
