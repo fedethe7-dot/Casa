@@ -1,5 +1,5 @@
 // Cambia la versione a ogni aggiornamento, così il telefono scarica la nuova.
-const CACHE = "hub-v10";
+const CACHE = "hub-v11";
 const FILES = ["./", "index.html", "ecosistema.js", "sistema.js", "blocco.js", "manifest.json", "icon.svg", "icon-192.png", "icon-512.png", "sfondo.jpg"];
 
 self.addEventListener("install", e => {

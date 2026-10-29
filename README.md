@@ -2,7 +2,8 @@
 
 Pagina "home" che raccoglie tutte le app di Federico in un unico posto.
 
-- App collegate: Gestione Casa (pagamenti), Home Vault (garanzie), Lavori di casa, Animali di casa
+- App collegate: Gestione Casa (pagamenti), Home Vault (garanzie), Lavori di casa, Animali di casa, Baracca (attrezzi)
+- Dal 2027 Animali e Baracca mandano da sole le loro spese in Gestione Casa (categorie 🐾 Animali e 🧰 Baracca), entrando con la chiave di sistema
 - Per aggiungere un'app: una riga nuova nell'elenco `APPS` dentro `index.html`
 - Nessun dato personale è salvato qui: ogni app tiene i suoi dati nel proprio foglio Google.
 
