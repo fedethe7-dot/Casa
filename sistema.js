@@ -126,6 +126,66 @@
     svg.onpointerup = fine; svg.onpointercancel = fine;
   }
 
+  /* ---------- Face ID / impronta (WebAuthn, come le "passkey") ----------
+     Si registra una chiave nel telefono, protetta da Face ID, impronta o blocco schermo.
+     Per sbloccare il telefono deve riconoscere la persona: l'hub non vede mai il volto o il dito. */
+  const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const unb64 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+  const nelApk = () => { try { return !!window.AndroidApp; } catch (e) { return false; } };
+  const suIphone = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const nomeBio = () => suIphone() ? 'Face ID' : 'impronta';
+  async function bioDisponibile() {
+    try { return !nelApk() && !!window.PublicKeyCredential && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); }
+    catch (e) { return false; }
+  }
+  async function bioAttiva() {
+    const cred = await navigator.credentials.create({ publicKey: {
+      rp: { name: 'Le mie app', id: location.hostname },
+      user: { id: crypto.getRandomValues(new Uint8Array(16)), name: (raw('eco.me') || 'famiglia') + ' · Le mie app', displayName: raw('eco.me') || 'Le mie app' },
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'discouraged' },
+      timeout: 60000, attestation: 'none'
+    } });
+    put('eco.passkey', b64(cred.rawId));
+    EcoBlocco.sblocca();
+  }
+  async function bioVerifica() {
+    const id = raw('eco.passkey'); if (!id) return false;
+    const a = await navigator.credentials.get({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)), rpId: location.hostname, userVerification: 'required', timeout: 60000,
+      allowCredentials: [{ type: 'public-key', id: unb64(id), transports: ['internal', 'hybrid'] }]
+    } });
+    const flags = new Uint8Array(a.response.authenticatorData)[32];
+    return !!(flags & 0x04);   // il telefono ha davvero riconosciuto la persona
+  }
+
+  /* ---------- schermata Face ID / impronta ---------- */
+  function schermataBio(testo) {
+    return new Promise(risolvi => {
+      const box = $('#seq');
+      const seq = !!raw('eco.sequenza');
+      box.innerHTML = `<h3>Ciao ${esc(raw('eco.me') || '')} 👋</h3><div class="sub" id="bS">${esc(testo || '')}</div>
+        <button class="bt" id="bGo" style="max-width:320px;font-size:18px;padding:18px">${suIphone() ? '🙂 Sblocca con Face ID' : '👆 Sblocca con l\'impronta'}</button>
+        ${seq ? '<button class="link" id="bSeq">Usa la sequenza</button>' : ''}
+        <button class="link" id="bK">Usa la chiave di sistema</button>`;
+      box.classList.remove('nascosto');
+      const chiudi = v => { box.classList.add('nascosto'); box.innerHTML = ''; risolvi(v); };
+      const prova = async () => {
+        try { if (await bioVerifica()) { EcoBlocco.sblocca(); chiudi(true); } }
+        catch (e) { $('#bS').textContent = 'Non riconosciuto: riprova o usa un altro modo'; $('#bS').classList.add('err'); }
+      };
+      $('#bGo').onclick = prova;
+      if (seq) $('#bSeq').onclick = async () => { box.classList.add('nascosto'); risolvi(await schermataSequenza('sblocca')); };
+      $('#bK').onclick = () => {
+        const k = prompt('Scrivi la chiave di sistema:'); if (k == null) return;
+        if (raw('eco.chiave') && k.trim() === raw('eco.chiave')) { EcoBlocco.sblocca(); chiudi(true); }
+        else { $('#bS').textContent = 'Chiave sbagliata'; $('#bS').classList.add('err'); }
+      };
+      if (!suIphone()) setTimeout(prova, 250);   // su Android parte da sola; su iPhone serve il tocco
+    });
+  }
+
   /* ---------- schermata della sequenza ---------- */
   // modo: 'sblocca' | 'crea'. Restituisce una Promise che si risolve a lavoro finito.
   function schermataSequenza(modo, testo) {
@@ -352,6 +412,9 @@
       <h3>⚙️ Impostazioni <button class="x" id="impX" aria-label="Chiudi">✕</button></h3>
       <p class="nota">Valgono per tutte le app: non serve più impostarle una per una.</p>
       ${avviso ? `<div class="box" style="margin-top:12px">${esc(avviso)}</div>` : ''}
+      ${raw('eco.chiave') ? '' : `<div class="box" style="margin-top:12px"><b>📩 Hai un link d'invito?</b>
+        <input id="impIncolla0" class="url" type="url" placeholder="Incolla qui il link che ti hanno mandato">
+        <button class="bt" id="impUsaInvito0">Usa il link d'invito</button></div>`}
 
       <h4>👤 Chi sei</h4>
       <div class="chips" id="impChi">${nomiFamiglia().map(n => `<button class="chip ${n === me ? 'on' : ''}" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>
@@ -364,6 +427,13 @@
         <div class="stato" id="impStato"></div>
         <p class="nota">Una sola chiave per Gestione Casa, Home Vault, Lavori e Animali. Deve essere la stessa impostata nei loro script Google.
         In Gestione Casa resta possibile anche l'accesso con Google.</p>
+      </div>
+
+      <h4 id="bioH" style="display:none">${suIphone() ? '🙂 Face ID' : '👆 Impronta'}</h4>
+      <div class="box" id="bioBox" style="display:none">
+        <button class="bt ${raw('eco.passkey') ? 'sec' : ''}" id="impBio">${raw('eco.passkey') ? 'Riattiva ' + nomeBio() : 'Entra con ' + nomeBio()}</button>
+        ${raw('eco.passkey') ? '<button class="bt dng" id="impNoBio">Togli ' + nomeBio() + '</button>' : ''}
+        <p class="nota">Per aprire le app il telefono ti riconosce con ${nomeBio()} (o con il codice del telefono). Il volto e l'impronta restano nel telefono: le app non li vedono.</p>
       </div>
 
       <h4>🔒 Sblocco a sequenza</h4>
@@ -434,6 +504,13 @@
       await schermataSequenza('sblocca', 'Disegnala per toglierla');
       del('eco.sequenza'); EcoBlocco.sblocca(); toast('Sequenza tolta');
     };
+    if ($('#impUsaInvito0')) $('#impUsaInvito0').onclick = () => { $('#impIncolla').value = $('#impIncolla0').value; $('#impUsaInvito').onclick(); };
+    bioDisponibile().then(ok => { if (ok && $('#bioBox')) { $('#bioH').style.display = ''; $('#bioBox').style.display = ''; } });
+    $('#impBio').onclick = async () => {
+      try { await bioAttiva(); toast(nomeBio() + ' attivato 🔒'); apriImpostazioni(); }
+      catch (e) { toast('⚠️ ' + nomeBio() + ' non attivato' + (e && e.name === 'NotAllowedError' ? ': annullato' : '')); }
+    };
+    if ($('#impNoBio')) $('#impNoBio').onclick = () => { del('eco.passkey'); toast(nomeBio() + ' tolto'); apriImpostazioni(); };
     $('#impUsaInvito').onclick = () => {
       const o = leggiInvito($('#impIncolla').value.trim());
       if (!o || !o.k) return toast('Link d\'invito non valido');
@@ -478,14 +555,16 @@
     if (/sblocca=/.test(location.hash)) history.replaceState(null, '', location.pathname);   // un indirizzo esterno viene ignorato
     if (EcoBlocco.attivo() && !EcoBlocco.sbloccato()) {
       await dopoIntro;
-      if (await schermataSequenza('sblocca') === 'reset') await schermataSequenza('crea', 'Scegline una nuova');
+      if (raw('eco.passkey') && await bioDisponibile()) await schermataBio();
+      else if (raw('eco.sequenza')) { if (await schermataSequenza('sblocca') === 'reset') await schermataSequenza('crea', 'Scegline una nuova'); }
+      else { del('eco.passkey'); EcoBlocco.sblocca(); }   // Face ID non più disponibile e niente sequenza: non resto chiuso fuori
     }
     if (torna) { location.replace(torna); return false; }
     if (invito) {
       if (invito.k) put('eco.chiave', invito.k);
-      apriImpostazioni('👋 Benvenuto! 1) Scegli chi sei  2) Premi "Collega tutte le app"  3) Crea la tua sequenza.');
+      apriImpostazioni('👋 Benvenuto! 1) Scegli chi sei  2) Premi "Collega tutte le app"  3) Attiva ' + (suIphone() ? 'Face ID' : 'l\'impronta') + ' per entrare.');
     } else if (!raw('eco.me') && !raw('eco.chiave')) {
-      apriImpostazioni('👋 Primo avvio: scegli chi sei e inserisci la chiave di sistema.');
+      apriImpostazioni('👋 Primo avvio. Se ti hanno mandato un link d\'invito, incollalo qui sotto. Altrimenti scegli chi sei e scrivi la chiave di sistema.');
     }
     return true;
   }

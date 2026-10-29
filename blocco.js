@@ -11,7 +11,7 @@
   function set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* niente */ } }
 
   var B = window.EcoBlocco = {
-    attivo: function () { return !!get(K_SEQ); },
+    attivo: function () { return !!get(K_SEQ) || !!get('eco.passkey'); },   // sequenza o Face ID / impronta
     sbloccato: function () {
       // Nell'app Android "Le mie app" lo sblocco lo fa l'impronta
       try { if (window.AndroidApp && AndroidApp.sbloccato()) return true; } catch (e) { /* niente */ }
