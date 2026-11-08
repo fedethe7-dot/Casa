@@ -256,9 +256,8 @@
   Sistema.avvio(dopoIntro).then(ok => { if (ok) Ecosistema.aggiorna(); });
   document.addEventListener("visibilitychange", async () => {
     if (document.visibilityState !== "visible") return;
-    if (EcoBlocco.attivo() && !EcoBlocco.sbloccato() && !document.querySelector("#seq:not(.nascosto)")) {
-      if (await Sistema.schermataSequenza("sblocca") === "reset") await Sistema.schermataSequenza("crea", "Scegline una nuova");
-    }
+    // tornando nell'hub dopo 30 minuti: lo stesso sblocco dell'apertura (impronta se attiva, non sempre la sequenza)
+    if (EcoBlocco.attivo() && !EcoBlocco.sbloccato() && !document.querySelector("#seq:not(.nascosto)")) await Sistema.chiediSblocco();
     EcoBlocco.rinnova(); Ecosistema.aggiorna();
   });
   document.getElementById("btnImp").onclick = () => Sistema.apriImpostazioni();
