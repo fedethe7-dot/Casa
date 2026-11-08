@@ -549,15 +549,25 @@
     } catch (e) { return null; }
   }
 
+  // Un solo sblocco: Face ID / impronta se attivi, altrimenti la sequenza
+  let sbloccoAperto = null;
+  function chiediSblocco(testo) {
+    if (sbloccoAperto) return sbloccoAperto;   // già sullo schermo: non ne apro un secondo
+    sbloccoAperto = (async () => {
+      if (raw('eco.passkey') && await bioDisponibile()) await schermataBio(testo);
+      else if (raw('eco.sequenza')) { if (await schermataSequenza('sblocca', testo) === 'reset') await schermataSequenza('crea', 'Scegline una nuova'); }
+      else { del('eco.passkey'); EcoBlocco.sblocca(); }   // Face ID non più disponibile e niente sequenza: non resto chiuso fuori
+    })().finally(() => { sbloccoAperto = null; });
+    return sbloccoAperto;
+  }
+
   async function avvio(dopoIntro) {
     const invito = leggiInvito();
     const torna = ritorno();
     if (/sblocca=/.test(location.hash)) history.replaceState(null, '', location.pathname);   // un indirizzo esterno viene ignorato
     if (EcoBlocco.attivo() && !EcoBlocco.sbloccato()) {
       await dopoIntro;
-      if (raw('eco.passkey') && await bioDisponibile()) await schermataBio();
-      else if (raw('eco.sequenza')) { if (await schermataSequenza('sblocca') === 'reset') await schermataSequenza('crea', 'Scegline una nuova'); }
-      else { del('eco.passkey'); EcoBlocco.sblocca(); }   // Face ID non più disponibile e niente sequenza: non resto chiuso fuori
+      await chiediSblocco();
     }
     if (torna) { location.replace(torna); return false; }
     if (invito) {
@@ -569,5 +579,5 @@
     return true;
   }
 
-  window.Sistema = { avvio, apriImpostazioni, rientraCasa, schermataSequenza };
+  window.Sistema = { avvio, apriImpostazioni, rientraCasa, schermataSequenza, chiediSblocco };
 })();
